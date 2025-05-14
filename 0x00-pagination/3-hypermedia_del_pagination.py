@@ -35,35 +35,30 @@ class Server:
             dataset = self.dataset()
             truncated_dataset = dataset[:1000]
             self.__indexed_dataset = {
-                i: dataset[i] for i in range(len(dataset))
-            }
+                    i: dataset[i] for i in range(len(dataset))
+                    }
         return self.__indexed_dataset
 
-    def get_hyper_index(self, index: int = None,
-                        page_size: int = 10) -> Dict:
-        """ return all data"""
+    def get_hyper_index(self, index: int = None, page_size: int = 10) -> Dict:
+        """
+        deletion resilient hypermedia pagination
+        """
+        dataset = self.indexed_dataset()
+        assert type(index) is int and index in range(len(dataset))
 
-        if index is None:
-            index = 0
+        data = []
+        start, end = index, index + page_size
 
-        # validate the index
-        assert isinstance(index, int)
-        assert 0 <= index < len(self.indexed_dataset())
-        assert isinstance(page_size, int) and page_size > 0
-
-        data = []  # collect all indexed data
-        next_index = index + page_size
-
-        for value in range(index, next_index):
-            if self.indexed_dataset().get(value):
-                data.append(self.indexed_dataset()[value])
+        while start < end:
+            if start in dataset.keys():
+                data.append(dataset[start])
             else:
-                value += 1
-                next_index += 1
+                end += 1
+            start += 1
 
         return {
-            'index': index,
-            'data': data,
-            'page_size': page_size,
-            'next_index': next_index
-        }
+                "index": index,
+                "data": data,
+                "page_size": len(data),
+                "next_index": end
+                }
